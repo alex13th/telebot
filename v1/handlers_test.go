@@ -5,13 +5,13 @@ import (
 )
 
 func TestUpdateHandlerProceed(t *testing.T) {
-	tb, _ := NewSimpleBot("***Token***", nil)
+	tb := NewSimpleBot("***Token***", nil)
 	message := Message{}
-	tu := Update{Message: &message}
+	tu := Update{Message: message}
 
 	uh := BaseUpdateHandler{}
 	mh := BaseMessageHandler{
-		Handler: func(tm *Message) error {
+		Handler: func(tm Message) error {
 			tm.Caption = "Test caption"
 			return nil
 		},
@@ -67,20 +67,20 @@ func TestCommandHandlerProceed(t *testing.T) {
 	}
 
 	mh := BaseMessageHandler{
-		Handler: func(tm *Message) error {
+		Handler: func(tm Message) error {
 			tm.Caption = "Ok"
 			return nil
 		},
 	}
 
-	ch := CommandHandler{Command: "start", Handler: func(m *Message) error {
+	ch := CommandHandler{Command: "start", Handler: func(m Message) error {
 		return mh.ProceedMessage(m)
 	}}
 
 	for name, test := range tests {
 		t.Run("Simple "+name, func(t *testing.T) {
 			msg := Message{Text: test.text, Caption: ""}
-			ch.ProceedMessage(&msg)
+			ch.ProceedMessage(msg)
 			if msg.Caption != test.want {
 				t.Fail()
 			}
@@ -92,7 +92,7 @@ func TestCommandHandlerProceed(t *testing.T) {
 	for name, test := range tests {
 		t.Run("Regexp "+name, func(t *testing.T) {
 			msg := Message{Text: test.text, Caption: ""}
-			ch.ProceedMessage(&msg)
+			ch.ProceedMessage(msg)
 			if msg.Caption != test.want_regexp {
 				t.Fail()
 			}
@@ -122,7 +122,7 @@ func TestPrefixCallbackHandlerProceed(t *testing.T) {
 
 	handler := PrefixCallbackHandler{
 		Prefix: "pref",
-		Handler: func(cb *CallbackQuery) error {
+		Handler: func(cb CallbackQuery) error {
 			cb.Data = "Ok"
 			return nil
 		},
@@ -131,7 +131,7 @@ func TestPrefixCallbackHandlerProceed(t *testing.T) {
 	for name, test := range tests {
 		t.Run("Callback "+name, func(t *testing.T) {
 			callback := CallbackQuery{Data: test.text}
-			handler.ProceedCallback(&callback)
+			handler.ProceedCallback(callback)
 			if callback.Data != test.want {
 				t.Fail()
 			}

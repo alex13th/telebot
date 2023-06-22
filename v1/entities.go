@@ -1,6 +1,9 @@
 package telebot
 
-import "regexp"
+import (
+	"context"
+	"regexp"
+)
 
 type User struct {
 	Id                      int    `json:"id"`
@@ -47,7 +50,7 @@ type ChatLocation struct {
 }
 
 type Chat struct {
-	Id                    int             `json:"id"`
+	Id                    interface{}     `json:"id"`
 	Type                  string          `json:"type"`
 	Title                 string          `json:"title"`
 	Username              string          `json:"username"`
@@ -57,7 +60,7 @@ type Chat struct {
 	Bio                   string          `json:"bio"`
 	Description           string          `json:"description"`
 	InviteLink            string          `json:"invite_link"`
-	PinnedMessage         Message         `json:"pinned_message"`
+	PinnedMessage         *Message        `json:"pinned_message"`
 	Permissions           ChatPermissions `json:"permissions"`
 	SlowModeDelay         int             `json:"slow_mode_delay"`
 	MessageAutoDeleteTime int             `json:"message_auto_delete_time"`
@@ -99,6 +102,10 @@ type InlineKeyboardMarkup struct {
 	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard"`
 }
 
+type ReplyMarkuper interface {
+	ReplyKeyboardMarkup | InlineKeyboardMarkup
+}
+
 type MessageEntity struct {
 	Type     string `json:"type"`
 	Offset   int    `json:"offset"`
@@ -110,34 +117,32 @@ type MessageEntity struct {
 
 type Message struct {
 	MessageId             int             `json:"message_id"`
-	From                  *User           `json:"from"`
-	SenderChat            *Chat           `json:"sender_chat"`
+	From                  User            `json:"from"`
+	SenderChat            Chat            `json:"sender_chat"`
 	Date                  int             `json:"date"`
-	Chat                  *Chat           `json:"chat"`
-	ForwardFrom           *User           `json:"forward_from"`
-	ForwardFromChat       *Chat           `json:"forward_from_chat"`
+	Chat                  Chat            `json:"chat"`
+	ForwardFrom           User            `json:"forward_from"`
+	ForwardFromChat       Chat            `json:"forward_from_chat"`
 	ForwardFromMessage_id int             `json:"forward_from_message_id"`
 	ForwardSignature      string          `json:"forward_signature"`
 	ForwardSenderName     string          `json:"forward_sender_name"`
 	ForwardDate           int             `json:"forward_date"`
 	ReplyToMessage        *Message        `json:"reply_to_message"`
-	ChatShared            *ChatShared     `json:"chat_shared"`
-	ViaBot                *User           `json:"via_bot"`
+	ChatShared            ChatShared      `json:"chat_shared"`
+	ViaBot                User            `json:"via_bot"`
 	EditDate              int             `json:"edit_date"`
 	MediaGroupId          int             `json:"media_group_id"`
 	AuthorSignature       string          `json:"author_signature"`
 	Text                  string          `json:"text"`
 	Entities              []MessageEntity `json:"entities"`
 	Caption               string          `json:"caption"`
-	CaptionEentities      []MessageEntity `json:"caption_entities"`
+	CaptionEntities       []MessageEntity `json:"caption_entities"`
 	ReplyMarkup           interface{}     `json:"reply_markup"`
 }
 
 func (msg Message) GetCommand() string {
-	re, err := regexp.Compile(`^/([a-zA-Z0-9_]*)`)
-	if err != nil {
-		return ""
-	}
+	re, _ := regexp.Compile(`^/([a-zA-Z0-9_]*)`)
+
 	matches := re.FindStringSubmatch(msg.Text)
 	if len(matches) < 2 {
 		return ""
@@ -149,62 +154,94 @@ func (msg Message) IsCommand() bool {
 	return msg.GetCommand() != ""
 }
 
-func (msg Message) SendMessage(tb Bot, Text string, mr MessageRequest) (*MessageResponse, error) {
-	return tb.SendMessage(msg.CreateMessageRequest(Text, mr))
+func (msg Message) DeleteMessage(ctx context.Context, b Bot) (MessageResponse, error) {
+	return b.Send(ctx, DeleteMessageRequest{ChatId: msg.Chat.Id, MessageId: msg.MessageId})
 }
 
-func (msg Message) DeleteMessage(tb Bot) {
-	tb.SendMessage(&DeleteMessageRequest{ChatId: msg.Chat.Id, MessageId: msg.MessageId})
+// Edit
+//
+// Edit message with current Text and ReplyMarkup
+func (msg Message) Edit(ctx context.Context, tb Bot) (MessageResponse, error) {
+	return tb.Send(ctx,
+		EditMessageTextRequest{ChatId: msg.Chat.Id, MessageId: msg.MessageId, Text: msg.Text, ReplyMarkup: msg.ReplyMarkup})
 }
 
-func (msg Message) Reply(tb Bot, Text string, mr MessageRequest) (*MessageResponse, error) {
-	return tb.SendMessage(msg.CreateReplyRequest(Text, mr))
+// EditKeyboard
+//
+// Edit message text
+func (msg Message) EditKeyboard(ctx context.Context, tb Bot, kbd InlineKeyboardMarkup) (MessageResponse, error) {
+	return tb.Send(ctx,
+		EditMessageReplyMarkup{ChatId: msg.Chat.Id, MessageId: msg.MessageId, ReplyMarkup: kbd})
 }
 
-func (msg Message) CreateReplyRequest(Text string, mr MessageRequest) (result MessageRequest) {
-	result = msg.CreateMessageRequest(Text, mr)
-	result.ReplyToMessageId = msg.MessageId
-	return
+// EditMR
+//
+// Edit message with EditMessageTextRequest
+func (msg Message) EditMR(ctx context.Context, tb Bot, emr EditMessageTextRequest) (MessageResponse, error) {
+	emr.ChatId = msg.Chat.Id
+	emr.MessageId = msg.MessageId
+	return tb.Send(ctx, emr)
 }
 
-func (msg *Message) CreateMessageRequest(Text string, mr MessageRequest) (result MessageRequest) {
-	result.ChatId = msg.Chat.Id
-	result.Text += Text
-
-	return
+// EditText
+//
+// Edit message text
+func (msg Message) EditText(ctx context.Context, tb Bot, text string) (MessageResponse, error) {
+	return tb.Send(ctx,
+		EditMessageTextRequest{ChatId: msg.Chat.Id, MessageId: msg.MessageId, Text: text})
 }
 
-func (msg Message) EditText(tb Bot, Text string, mer EditMessageTextRequest) (*MessageResponse, error) {
-	return tb.SendMessage(msg.CreateEditTextRequest(Text, mer))
+func (msg Message) ReplyText(ctx context.Context, b Bot, text string) (MessageResponse, error) {
+	return b.Send(ctx,
+		MessageRequest{ChatId: msg.Chat.Id, ReplyToMessageId: msg.MessageId, Text: text})
 }
 
-func (msg Message) CreateEditTextRequest(Text string, Request EditMessageTextRequest) EditMessageTextRequest {
-	return EditMessageTextRequest{ChatId: msg.Chat.Id, MessageId: msg.MessageId, Text: Text}
+func (msg Message) ReplyMR(ctx context.Context, b Bot, mr MessageRequest) (MessageResponse, error) {
+	mr.ChatId = msg.Chat.Id
+	mr.ReplyToMessageId = msg.MessageId
+	return b.Send(ctx, mr)
+}
+
+// Send
+//
+// Send message with current Text and ReplyMarkup to same chat
+func (msg Message) Send(ctx context.Context, b Bot) (MessageResponse, error) {
+	return b.Send(ctx,
+		MessageRequest{ChatId: msg.Chat.Id, Text: msg.Text, ReplyMarkup: msg.ReplyMarkup})
+}
+
+// SendText
+//
+// Send only text message to same chat
+func (msg Message) SendText(ctx context.Context, b Bot, text string) (MessageResponse, error) {
+	return b.Send(ctx,
+		MessageRequest{ChatId: msg.Chat.Id, Text: text})
 }
 
 type CallbackQuery struct {
-	Id              string   `json:"id"`
-	From            *User    `json:"from"`
-	Message         *Message `json:"message"`
-	InlineMessageId string   `json:"inline_message_id"`
-	ChatInstance    string   `json:"chat_instance"`
-	Data            string   `json:"data"`
-	GameShortName   string   `json:"game_short_name"`
+	Id              string  `json:"id"`
+	From            User    `json:"from"`
+	Message         Message `json:"message"`
+	InlineMessageId string  `json:"inline_message_id"`
+	ChatInstance    string  `json:"chat_instance"`
+	Data            string  `json:"data"`
+	GameShortName   string  `json:"game_short_name"`
 }
 
-func (cq CallbackQuery) Answer(tb Bot, Text string, req AnswerCallbackQueryRequest) (*MessageResponse, error) {
-	req.CallbackQueryId = cq.Id
-	req.Text = Text
-	return tb.SendMessage(req)
+func (cq CallbackQuery) Answer(ctx context.Context, b Bot, Text string) (MessageResponse, error) {
+	acqr := AnswerCallbackQueryRequest{}
+	acqr.CallbackQueryId = cq.Id
+	acqr.Text = Text
+	return b.Send(ctx, acqr)
 }
 
 type Update struct {
-	UpdateId          int            `json:"update_id"`
-	Message           *Message       `json:"message"`
-	EditedMessage     *Message       `json:"edited_message"`
-	ChannelPost       *Message       `json:"channel_post"`
-	EditedChannelPost *Message       `json:"edited_channel_post"`
-	CallbackQuery     *CallbackQuery `json:"callback_query"`
+	UpdateId          int           `json:"update_id"`
+	Message           Message       `json:"message"`
+	EditedMessage     Message       `json:"edited_message"`
+	ChannelPost       Message       `json:"channel_post"`
+	EditedChannelPost Message       `json:"edited_channel_post"`
+	CallbackQuery     CallbackQuery `json:"callback_query"`
 }
 
 type BotCommand struct {

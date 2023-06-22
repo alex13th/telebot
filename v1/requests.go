@@ -8,31 +8,6 @@ import (
 	"sync"
 )
 
-type UpdatesRequest struct {
-	Offset         int      `json:"offset"`
-	Limit          int      `json:"limit"`
-	Timeout        int      `json:"timeout"`
-	AllowedUpdates []string `json:"allowed_updates"`
-}
-
-func (req UpdatesRequest) GetParams() (val url.Values, method string, err error) {
-	method = "getUpdates"
-	val = url.Values{}
-	if req.Offset != 0 {
-		val.Add("offset", strconv.Itoa(req.Offset))
-	}
-	if req.Limit > 0 {
-		val.Add("limit", strconv.Itoa(req.Limit))
-	}
-	if req.Timeout > 0 {
-		val.Add("timeout", strconv.Itoa(req.Timeout))
-	}
-	for _, au := range req.AllowedUpdates {
-		val.Add("allowed_updates", au)
-	}
-	return
-}
-
 type MessageRequest struct {
 	ChatId                   interface{}     `json:"chat_id"`
 	Text                     string          `json:"text"`
@@ -86,7 +61,7 @@ func (req MessageRequest) GetParams() (val url.Values, method string, err error)
 type EditMessageTextRequest struct {
 	ChatId                interface{}     `json:"chat_id"`
 	MessageId             int             `json:"message_id"`
-	InlineMessageId       int             `json:"inline_message_id"`
+	InlineMessageId       string          `json:"inline_message_id"`
 	Text                  string          `json:"text"`
 	ParseMode             string          `json:"parse_mode"`
 	Entities              []MessageEntity `json:"entities"`
@@ -99,7 +74,7 @@ func (req EditMessageTextRequest) GetParams() (val url.Values, method string, er
 	val = url.Values{}
 	val.Add("chat_id", fmt.Sprint(req.ChatId))
 	val.Add("message_id", strconv.Itoa(req.MessageId))
-	val.Add("inline_message_id", strconv.Itoa(req.InlineMessageId))
+	val.Add("inline_message_id", req.InlineMessageId)
 	val.Add("text", req.Text)
 	if req.ParseMode != "" {
 		val.Add("parse_mode", req.ParseMode)
@@ -122,6 +97,27 @@ func (req EditMessageTextRequest) GetParams() (val url.Values, method string, er
 		}
 		val.Add("reply_markup", string(data))
 	}
+	return
+}
+
+type EditMessageReplyMarkup struct {
+	ChatId          interface{} `json:"chat_id"`
+	MessageId       int         `json:"message_id"`
+	InlineMessageId string      `json:"inline_message_id"`
+	ReplyMarkup     interface{} `json:"reply_markup"`
+}
+
+func (req EditMessageReplyMarkup) GetParams() (val url.Values, method string, err error) {
+	method = "editMessageReplyMarkup"
+	val = url.Values{}
+	val.Add("chat_id", fmt.Sprint(req.ChatId))
+	val.Add("message_id", strconv.Itoa(req.MessageId))
+	val.Add("inline_message_id", req.InlineMessageId)
+	data, err := json.Marshal(req.ReplyMarkup)
+	if err != nil {
+		return nil, "", err
+	}
+	val.Add("reply_markup", string(data))
 	return
 }
 
@@ -175,19 +171,16 @@ func (req *SetMyCommandsRequest) GetParams() (val url.Values, method string, err
 }
 
 type DeleteMessageRequest struct {
-	mu        sync.RWMutex
 	ChatId    interface{} `json:"chat_id"`
 	MessageId int         `json:"message_id"`
 }
 
-func (req *DeleteMessageRequest) GetParams() (val url.Values, method string, err error) {
-	req.mu.RLock()
-	method = "deleteMessage"
-	val = url.Values{}
+func (req DeleteMessageRequest) GetParams() (url.Values, string, error) {
+	method := "deleteMessage"
+	val := url.Values{}
 	val.Add("chat_id", fmt.Sprint(req.ChatId))
 	val.Add("message_id", fmt.Sprint(req.MessageId))
-	defer req.mu.RUnlock()
-	return
+	return val, method, nil
 }
 
 type LabeledPrice struct {
