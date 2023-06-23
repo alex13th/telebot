@@ -2,7 +2,9 @@ package telebot
 
 import (
 	"context"
+	"fmt"
 	"regexp"
+	"strconv"
 )
 
 type BotCommand struct {
@@ -55,6 +57,17 @@ type Chat struct {
 	CanSetStickerSet      bool            `json:"can_set_sticker_set"`
 	LinkedChatId          int             `json:"linked_chat_id"`
 	Location              ChatLocation    `json:"location"`
+}
+
+func (c Chat) GetId() (string, error) {
+	switch val := c.Id.(type) {
+	case int:
+		return strconv.Itoa(val), nil
+	case string:
+		return val, nil
+	default:
+		return "", fmt.Errorf("invalid chat id value type %v", val)
+	}
 }
 
 type ChatLocation struct {
