@@ -97,11 +97,11 @@ type KeyboardButtonRequestChat struct {
 
 type InlineKeyboardButton struct {
 	Text                         string `json:"text"`
-	Url                          string `json:"url"`
-	CallbackData                 string `json:"callback_data"`
-	SwitchInlineQuery            string `json:"switch_inline_query"`
-	SwitchInlineQueryCurrentChat string `json:"switch_inline_query_current_chat"`
-	Pay                          bool   `json:"pay"`
+	Url                          string `json:"url,omitempty"`
+	CallbackData                 string `json:"callback_data,omitempty"`
+	SwitchInlineQuery            string `json:"switch_inline_query,omitempty"`
+	SwitchInlineQueryCurrentChat string `json:"switch_inline_query_current_chat,omitempty"`
+	Pay                          bool   `json:"pay,omitempty"`
 }
 
 type InlineKeyboardMarkup struct {
@@ -224,9 +224,9 @@ type MessageEntity struct {
 	Type     string `json:"type"`
 	Offset   int    `json:"offset"`
 	Length   int    `json:"length"`
-	Url      string `json:"url"`
-	User     *User  `json:"user"`
-	Language string `json:"language"`
+	Url      string `json:"url,omitempty"`
+	User     *User  `json:"user,omitempty"`
+	Language string `json:"language,omitempty"`
 }
 type ReplyKeyboardMarkup struct {
 	Keyboard [][]KeyboardButton `json:"keyboard"`
@@ -244,11 +244,11 @@ type Update struct {
 type User struct {
 	Id                      int    `json:"id"`
 	IsBot                   bool   `json:"is_bot"`
-	FirstName               string `json:"first_name"`
-	LastName                string `json:"last_name"`
-	UserName                string `json:"username"`
-	LanguageCode            string `json:"language_code"`
-	CanJoinGroups           bool   `json:"can_join_groups"`
-	CanReadAllGroupMessages bool   `json:"can_read_all_group_messages"`
-	SupportsInlineQueries   bool   `json:"supports_inline_queries"`
+	FirstName               string `json:"first_name,omitempty"`
+	LastName                string `json:"last_name,omitempty"`
+	UserName                string `json:"username,omitempty"`
+	LanguageCode            string `json:"language_code,omitempty"`
+	CanJoinGroups           bool   `json:"can_join_groups,omitempty"`
+	CanReadAllGroupMessages bool   `json:"can_read_all_group_messages,omitempty"`
+	SupportsInlineQueries   bool   `json:"supports_inline_queries,omitempty"`
 }

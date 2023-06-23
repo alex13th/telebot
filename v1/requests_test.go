@@ -1,25 +1,35 @@
 package telebot
 
 import (
+	"net/url"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
-func TestGetMessageParams(t *testing.T) {
+func TestMessageRequest_GetParams(t *testing.T) {
+	wantMethod := "sendMessage"
 	tests := map[string]struct {
-		request *MessageRequest
-		want    map[string]string
+		request    *MessageRequest
+		want       url.Values
+		wantMethod string
+		wantErr    bool
 	}{
-		"Required parameters": {
+		"Required fields": {
 			request: &MessageRequest{
 				ChatId: 586350636,
 				Text:   "Example of text",
 			},
-			want: map[string]string{
-				"chat_id": "586350636",
-				"text":    "Example of text",
+			want: map[string][]string{
+				"chat_id": {"586350636"},
+				"text":    {"Example of text"},
 			},
+			wantMethod: wantMethod,
 		},
-		"Fully filled parameters": {
+		"Empty ChatId": {request: &MessageRequest{Text: "Example of text"}, wantErr: true},
+		"Empty Text":   {request: &MessageRequest{ChatId: 586350636}, wantErr: true},
+		"Empty Fields": {request: &MessageRequest{}, wantErr: true},
+		"Fully filled fields": {
 			request: &MessageRequest{
 				ChatId:    586350636,
 				Text:      "Example of text",
@@ -53,17 +63,18 @@ func TestGetMessageParams(t *testing.T) {
 					}},
 				},
 			},
-			want: map[string]string{
-				"allow_sending_without_reply": "true",
-				"chat_id":                     "586350636",
-				"disable_notification":        "true",
-				"disable_web_page_preview":    "true",
-				"entities":                    `[{"type":"url","offset":0,"length":5,"url":"https://google.com","user":null,"language":""},{"type":"mention","offset":6,"length":5,"url":"","user":{"id":987654321,"is_bot":false,"first_name":"Firstname","last_name":"","username":"","language_code":"","can_join_groups":false,"can_read_all_group_messages":false,"supports_inline_queries":false},"language":""}]`,
-				"parse_mode":                  "MarkdownV2",
-				"reply_to_message_id":         "1234",
-				"text":                        "Example of text",
-				"reply_markup":                `{"inline_keyboard":[[{"text":"Button text 1","url":"","callback_data":"Data1","switch_inline_query":"","switch_inline_query_current_chat":"","pay":false},{"text":"Button text 2","url":"","callback_data":"Data2","switch_inline_query":"","switch_inline_query_current_chat":"","pay":false}]]}`,
+			want: map[string][]string{
+				"allow_sending_without_reply": {"true"},
+				"chat_id":                     {"586350636"},
+				"disable_notification":        {"true"},
+				"disable_web_page_preview":    {"true"},
+				"entities":                    {`[{"type":"url","offset":0,"length":5,"url":"https://google.com"},{"type":"mention","offset":6,"length":5,"user":{"id":987654321,"is_bot":false,"first_name":"Firstname"}}]`},
+				"parse_mode":                  {"MarkdownV2"},
+				"reply_to_message_id":         {"1234"},
+				"text":                        {"Example of text"},
+				"reply_markup":                {`{"inline_keyboard":[[{"text":"Button text 1","callback_data":"Data1"},{"text":"Button text 2","callback_data":"Data2"}]]}`},
 			},
+			wantMethod: wantMethod,
 		},
 	}
 
@@ -71,45 +82,62 @@ func TestGetMessageParams(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			values, method, err := test.request.GetParams()
 
-			if err != nil {
-				t.Fail()
+			if (err != nil) != test.wantErr {
+				t.Errorf("MessageRequest.GetParams() error = %v", err)
+				return
 			}
-
-			if method != "sendMessage" {
-				t.Fail()
+			if diff := cmp.Diff(values, test.want); diff != "" {
+				t.Errorf("MessageRequest.GetParams() difference %v", diff)
 			}
-
-			for name, val := range test.want {
-				valStr := values.Get(name)
-				if valStr != val {
-					t.Fail()
-				}
+			if method != test.wantMethod {
+				t.Errorf("EditMessageTextRequest.GetParams() gotMethod = %v, want %v", method, test.wantMethod)
 			}
 		})
 	}
 }
 
-func TestGetEditMessageTextParams(t *testing.T) {
+func TestEditMessageTextRequest_GetParams(t *testing.T) {
+	wantMethod := "editMessageText"
 	tests := map[string]struct {
-		request *EditMessageTextRequest
-		want    map[string]string
+		request    *EditMessageTextRequest
+		want       url.Values
+		wantMethod string
+		wantErr    bool
 	}{
-		"Required parameters": {
+		"Chat Message parameters": {
 			request: &EditMessageTextRequest{
-				ChatId:    586350636,
-				MessageId: 123456789,
+				ChatId:    10,
+				MessageId: 100,
 				Text:      "Example of text",
 			},
-			want: map[string]string{
-				"chat_id":    "586350636",
-				"message_id": "123456789",
-				"text":       "Example of text",
+			want: map[string][]string{
+				"chat_id":    {"10"},
+				"message_id": {"100"},
+				"text":       {"Example of text"},
 			},
+			wantMethod: wantMethod,
+		},
+		"Inline Message parameters": {
+			request: &EditMessageTextRequest{
+				InlineMessageId: "20",
+				Text:            "Example of text",
+			},
+			want: map[string][]string{
+				"inline_message_id": {"20"},
+				"text":              {"Example of text"},
+			},
+			wantMethod: wantMethod,
+		},
+		"Error fields": {
+			request: &EditMessageTextRequest{
+				Text: "Example of text",
+			},
+			wantErr: true,
 		},
 		"Fully filled parameters": {
 			request: &EditMessageTextRequest{
-				ChatId:    586350636,
-				MessageId: 123456789,
+				ChatId:    10,
+				MessageId: 100,
 				Text:      "Example of text",
 				ParseMode: "MarkdownV2",
 				Entities: []MessageEntity{
@@ -138,93 +166,37 @@ func TestGetEditMessageTextParams(t *testing.T) {
 					}},
 				},
 			},
-			want: map[string]string{
-				"chat_id":                  "586350636",
-				"message_id":               "123456789",
-				"disable_web_page_preview": "true",
-				"entities":                 `[{"type":"url","offset":0,"length":5,"url":"https://google.com","user":null,"language":""},{"type":"mention","offset":6,"length":5,"url":"","user":{"id":987654321,"is_bot":false,"first_name":"Firstname","last_name":"","username":"","language_code":"","can_join_groups":false,"can_read_all_group_messages":false,"supports_inline_queries":false},"language":""}]`,
-				"parse_mode":               "MarkdownV2",
-				"text":                     "Example of text",
-				"reply_markup":             `{"inline_keyboard":[[{"text":"Button text 1","url":"","callback_data":"Data1","switch_inline_query":"","switch_inline_query_current_chat":"","pay":false},{"text":"Button text 2","url":"","callback_data":"Data2","switch_inline_query":"","switch_inline_query_current_chat":"","pay":false}]]}`,
+			want: map[string][]string{
+				"chat_id":                  {"10"},
+				"message_id":               {"100"},
+				"disable_web_page_preview": {"true"},
+				"entities":                 {`[{"type":"url","offset":0,"length":5,"url":"https://google.com"},{"type":"mention","offset":6,"length":5,"user":{"id":987654321,"is_bot":false,"first_name":"Firstname"}}]`},
+				"parse_mode":               {"MarkdownV2"},
+				"text":                     {"Example of text"},
+				"reply_markup":             {`{"inline_keyboard":[[{"text":"Button text 1","callback_data":"Data1"},{"text":"Button text 2","callback_data":"Data2"}]]}`},
 			},
+			wantMethod: wantMethod,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			values, method, err := test.request.GetParams()
-
-			if err != nil {
-				t.Fail()
+			if (err != nil) != test.wantErr {
+				t.Errorf("EditMessageTextRequest.GetParams() error = %v", err)
+				return
 			}
-
-			if method != "editMessageText" {
-				t.Fail()
+			if diff := cmp.Diff(values, test.want); diff != "" {
+				t.Errorf("EditMessageTextRequest.GetParams() difference %v", diff)
 			}
-
-			for name, val := range test.want {
-				valStr := values.Get(name)
-				if valStr != val {
-					t.Fail()
-				}
+			if method != test.wantMethod {
+				t.Errorf("EditMessageTextRequest.GetParams() gotMethod = %v, want %v", method, test.wantMethod)
 			}
 		})
 	}
 }
 
-func TestGetUpdatesParams(t *testing.T) {
-	tests := map[string]struct {
-		request *UpdatesRequest
-		want    string
-	}{
-		"Empty parameters": {
-			request: &UpdatesRequest{},
-			want:    "",
-		},
-		"Fully filled parameters": {
-			request: &UpdatesRequest{
-				Offset:         551,
-				Limit:          100,
-				Timeout:        20,
-				AllowedUpdates: []string{"message", "edited_channel_post", "callback_query"},
-			},
-			want: "allowed_updates=message&allowed_updates=edited_channel_post&allowed_updates=callback_query&limit=100&offset=551&timeout=20",
-		},
-	}
-
-	req := tests["Fully filled parameters"].request
-	_, method, err := req.GetParams()
-
-	t.Run("Error is nil", func(t *testing.T) {
-		if err != nil {
-			t.Fail()
-		}
-	})
-
-	t.Run("Method", func(t *testing.T) {
-		if method != "getUpdates" {
-			t.Fail()
-		}
-	})
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			req := test.request
-			values, _, err := req.GetParams()
-
-			if err != nil {
-				t.Fail()
-			}
-
-			if values.Encode() != test.want {
-				t.Fail()
-			}
-		})
-	}
-
-}
-
-func TestGetSetMyCommandsRequestParams(t *testing.T) {
+func TestSetMyCommandsRequest_GetParams(t *testing.T) {
 	tests := map[string]struct {
 		request *SetMyCommandsRequest
 		want    map[string]string
@@ -277,7 +249,7 @@ func TestGetSetMyCommandsRequestParams(t *testing.T) {
 	}
 }
 
-func TestDeleteMessageRequestParams(t *testing.T) {
+func TestDeleteMessageRequest_GetParams(t *testing.T) {
 	tests := map[string]struct {
 		request *DeleteMessageRequest
 		want    map[string]string
@@ -310,50 +282,223 @@ func TestDeleteMessageRequestParams(t *testing.T) {
 	}
 }
 
-func TestGetInvoiceParams(t *testing.T) {
+func TestInvoiceRequest_GetParams(t *testing.T) {
+	wantMethod := "sendInvoice"
 	tests := map[string]struct {
-		request *InvoiceRequest
-		want    map[string]string
+		request    *InvoiceRequest
+		want       url.Values
+		wantMethod string
+		wantErr    bool
 	}{
-		"Required parameters": {
+		"Required fields": {
 			request: &InvoiceRequest{
-				ChatId:        586350636,
+				ChatId:        10,
 				Title:         "Test invoice",
 				Description:   "Test Description",
 				Payload:       "Test pyload",
-				ProviderToken: "TOKEN",
+				ProviderToken: "PAY_TOKEN",
 				Currency:      "RUB",
 				Prices:        []LabeledPrice{{Label: "GOOD", Amount: 10}},
 			},
-			want: map[string]string{
-				"chat_id":        "586350636",
-				"title":          "Test invoice",
-				"description":    "Test Description",
-				"payload":        "Test pyload",
-				"provider_token": "TOKEN",
-				"currency":       "RUB",
-				"prices":         `[{"label":"GOOD","amount":10}]`,
+			want: map[string][]string{
+				"chat_id":        {"10"},
+				"title":          {"Test invoice"},
+				"description":    {"Test Description"},
+				"payload":        {"Test pyload"},
+				"provider_token": {"PAY_TOKEN"},
+				"currency":       {"RUB"},
+				"prices":         {`[{"label":"GOOD","amount":10}]`},
 			},
+			wantMethod: wantMethod,
 		},
+		"With keyboard": {
+			request: &InvoiceRequest{
+				ChatId:        10,
+				Title:         "Test invoice",
+				Description:   "Test Description",
+				Payload:       "Test pyload",
+				ProviderToken: "PAY_TOKEN",
+				Currency:      "RUB",
+				Prices:        []LabeledPrice{{Label: "GOOD", Amount: 10}},
+				ReplyMarkup:   InlineKeyboardMarkup{[][]InlineKeyboardButton{{{Text: "Button"}}}},
+			},
+			want: map[string][]string{
+				"chat_id":        {"10"},
+				"title":          {"Test invoice"},
+				"description":    {"Test Description"},
+				"payload":        {"Test pyload"},
+				"provider_token": {"PAY_TOKEN"},
+				"currency":       {"RUB"},
+				"prices":         {`[{"label":"GOOD","amount":10}]`},
+				"reply_markup":   {`{"inline_keyboard":[[{"text":"Button"}]]}`},
+			},
+			wantMethod: wantMethod,
+		},
+		"Invalid fields": {
+			request: &InvoiceRequest{
+				ChatId:        10,
+				Title:         "Test invoice",
+				ProviderToken: "PAY_TOKEN",
+				Currency:      "RUB",
+				Prices:        []LabeledPrice{{Label: "GOOD", Amount: 10}},
+			},
+			wantErr: true,
+		},
+		"Empty fields": {request: &InvoiceRequest{}, wantErr: true},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			values, method, err := test.request.GetParams()
-
-			if err != nil {
-				t.Fail()
+			if (err != nil) != test.wantErr {
+				t.Errorf("InvoiceRequest.GetParams() error = %v", err)
+				return
 			}
-
-			if method != "sendInvoice" {
-				t.Fail()
+			if diff := cmp.Diff(values, test.want); diff != "" {
+				t.Errorf("InvoiceRequest.GetParams() difference %v", diff)
 			}
+			if method != test.wantMethod {
+				t.Errorf("InvoiceRequest.GetParams() gotMethod = %v, want %v", method, test.wantMethod)
+			}
+		})
+	}
+}
 
-			for name, val := range test.want {
-				valStr := values.Get(name)
-				if valStr != val {
-					t.Fail()
-				}
+func TestEditMessageReplyMarkup_GetParams(t *testing.T) {
+	wantMethod := "editMessageReplyMarkup"
+	type fields struct {
+		ChatId          interface{}
+		MessageId       int
+		InlineMessageId string
+		ReplyMarkup     InlineKeyboardMarkup
+	}
+	tests := []struct {
+		name       string
+		fields     fields
+		wantVal    url.Values
+		wantMethod string
+		wantErr    bool
+	}{
+		{
+			name: "Required fields",
+			fields: fields{
+				ChatId:    10,
+				MessageId: 100,
+			},
+			wantVal:    map[string][]string{"chat_id": {"10"}, "message_id": {"100"}},
+			wantMethod: wantMethod,
+		},
+		{
+			name: "With keyboard",
+			fields: fields{
+				ChatId:      10,
+				MessageId:   100,
+				ReplyMarkup: InlineKeyboardMarkup{[][]InlineKeyboardButton{{{Text: "Button"}}}},
+			},
+			wantVal:    map[string][]string{"chat_id": {"10"}, "message_id": {"100"}, "reply_markup": {`{"inline_keyboard":[[{"text":"Button"}]]}`}},
+			wantMethod: wantMethod,
+		},
+		{
+			name: "Inline message",
+			fields: fields{
+				InlineMessageId: "20",
+			},
+			wantVal:    map[string][]string{"inline_message_id": {"20"}},
+			wantMethod: wantMethod,
+		},
+		{
+			name:    "Required fields error",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := EditMessageReplyMarkup{
+				ChatId:          tt.fields.ChatId,
+				MessageId:       tt.fields.MessageId,
+				InlineMessageId: tt.fields.InlineMessageId,
+				ReplyMarkup:     tt.fields.ReplyMarkup,
+			}
+			gotVal, gotMethod, err := req.GetParams()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EditMessageReplyMarkup.GetParams() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := cmp.Diff(gotVal, tt.wantVal); diff != "" {
+				t.Errorf("EditMessageReplyMarkup.GetParams() difference %v", diff)
+			}
+			if gotMethod != tt.wantMethod {
+				t.Errorf("EditMessageReplyMarkup.GetParams() gotMethod = %v, want %v", gotMethod, tt.wantMethod)
+			}
+		})
+	}
+}
+
+func TestAnswerCallbackQueryRequest_GetParams(t *testing.T) {
+	wantMethod := "answerCallbackQuery"
+	type fields struct {
+		CallbackQueryId string
+		Text            string
+		ShowAlert       bool
+		URL             string
+		CacheTime       int
+	}
+	tests := []struct {
+		name       string
+		fields     fields
+		wantVal    url.Values
+		wantMethod string
+		wantErr    bool
+	}{
+		{
+			name:       "Required fields",
+			fields:     fields{CallbackQueryId: "1010"},
+			wantVal:    map[string][]string{"callback_query_id": {"1010"}, "show_alert": {"false"}},
+			wantMethod: wantMethod,
+		},
+		{
+			name:    "Empty fields",
+			fields:  fields{},
+			wantErr: true,
+		},
+		{
+			name: "Full fields",
+			fields: fields{
+				CallbackQueryId: "1010",
+				Text:            "Ok",
+				ShowAlert:       true,
+				URL:             "http:/url.local",
+				CacheTime:       100,
+			},
+			wantVal: map[string][]string{
+				"callback_query_id": {"1010"},
+				"text":              {"Ok"},
+				"show_alert":        {"true"},
+				"url":               {"http:/url.local"},
+				"cache_time":        {"100"},
+			},
+			wantMethod: wantMethod,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := AnswerCallbackQueryRequest{
+				CallbackQueryId: tt.fields.CallbackQueryId,
+				Text:            tt.fields.Text,
+				ShowAlert:       tt.fields.ShowAlert,
+				URL:             tt.fields.URL,
+				CacheTime:       tt.fields.CacheTime,
+			}
+			gotVal, gotMethod, err := req.GetParams()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("AnswerCallbackQueryRequest.GetParams() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := cmp.Diff(gotVal, tt.wantVal); diff != "" {
+				t.Errorf("AnswerCallbackQueryRequest.GetParams() difference %v", diff)
+			}
+			if gotMethod != tt.wantMethod {
+				t.Errorf("AnswerCallbackQueryRequest.GetParams() gotMethod = %v, want %v", gotMethod, tt.wantMethod)
 			}
 		})
 	}

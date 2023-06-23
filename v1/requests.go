@@ -22,6 +22,11 @@ type MessageRequest struct {
 
 func (req MessageRequest) GetParams() (val url.Values, method string, err error) {
 	method = "sendMessage"
+	if req.ChatId == nil || req.Text == "" {
+		return nil, "",
+			fmt.Errorf("required fields not defined, ChatId: %v, Text: %s", req.ChatId, req.Text)
+	}
+
 	val = url.Values{}
 	val.Add("chat_id", fmt.Sprint(req.ChatId))
 	val.Add("text", req.Text)
@@ -59,9 +64,9 @@ func (req MessageRequest) GetParams() (val url.Values, method string, err error)
 }
 
 type EditMessageTextRequest struct {
-	ChatId                interface{}     `json:"chat_id"`
-	MessageId             int             `json:"message_id"`
-	InlineMessageId       string          `json:"inline_message_id"`
+	ChatId                interface{}     `json:"chat_id,omitempty"`
+	MessageId             int             `json:"message_id,omitempty"`
+	InlineMessageId       string          `json:"inline_message_id,omitempty"`
 	Text                  string          `json:"text"`
 	ParseMode             string          `json:"parse_mode"`
 	Entities              []MessageEntity `json:"entities"`
@@ -71,10 +76,25 @@ type EditMessageTextRequest struct {
 
 func (req EditMessageTextRequest) GetParams() (val url.Values, method string, err error) {
 	method = "editMessageText"
+	if (req.ChatId == nil || req.MessageId == 0) && (req.InlineMessageId == "") {
+		return nil, "",
+			fmt.Errorf("required fields not defined, ChatId: %v, MessageId: %d, InlineMessageId: %s", req.ChatId, req.MessageId, req.InlineMessageId)
+	}
+
 	val = url.Values{}
-	val.Add("chat_id", fmt.Sprint(req.ChatId))
-	val.Add("message_id", strconv.Itoa(req.MessageId))
-	val.Add("inline_message_id", req.InlineMessageId)
+
+	if req.ChatId != nil {
+		val.Add("chat_id", fmt.Sprint(req.ChatId))
+	}
+
+	if req.MessageId != 0 {
+		val.Add("message_id", strconv.Itoa(req.MessageId))
+	}
+
+	if req.InlineMessageId != "" {
+		val.Add("inline_message_id", req.InlineMessageId)
+	}
+
 	val.Add("text", req.Text)
 	if req.ParseMode != "" {
 		val.Add("parse_mode", req.ParseMode)
@@ -101,23 +121,41 @@ func (req EditMessageTextRequest) GetParams() (val url.Values, method string, er
 }
 
 type EditMessageReplyMarkup struct {
-	ChatId          interface{} `json:"chat_id"`
-	MessageId       int         `json:"message_id"`
-	InlineMessageId string      `json:"inline_message_id"`
-	ReplyMarkup     interface{} `json:"reply_markup"`
+	ChatId          interface{}          `json:"chat_id"`
+	MessageId       int                  `json:"message_id"`
+	InlineMessageId string               `json:"inline_message_id"`
+	ReplyMarkup     InlineKeyboardMarkup `json:"reply_markup"`
 }
 
 func (req EditMessageReplyMarkup) GetParams() (val url.Values, method string, err error) {
 	method = "editMessageReplyMarkup"
-	val = url.Values{}
-	val.Add("chat_id", fmt.Sprint(req.ChatId))
-	val.Add("message_id", strconv.Itoa(req.MessageId))
-	val.Add("inline_message_id", req.InlineMessageId)
-	data, err := json.Marshal(req.ReplyMarkup)
-	if err != nil {
-		return nil, "", err
+
+	if (req.ChatId == nil || req.MessageId == 0) && (req.InlineMessageId == "") {
+		return nil, "",
+			fmt.Errorf("required fields not defined, ChatId: %v, MessageId: %d, InlineMessageId: %s", req.ChatId, req.MessageId, req.InlineMessageId)
 	}
-	val.Add("reply_markup", string(data))
+
+	val = url.Values{}
+
+	if req.ChatId != nil {
+		val.Add("chat_id", fmt.Sprint(req.ChatId))
+	}
+
+	if req.MessageId != 0 {
+		val.Add("message_id", strconv.Itoa(req.MessageId))
+	}
+
+	if req.InlineMessageId != "" {
+		val.Add("inline_message_id", req.InlineMessageId)
+	}
+
+	if req.ReplyMarkup.InlineKeyboard != nil {
+		data, err := json.Marshal(req.ReplyMarkup)
+		if err != nil {
+			return nil, "", err
+		}
+		val.Add("reply_markup", string(data))
+	}
 	return
 }
 
@@ -131,12 +169,23 @@ type AnswerCallbackQueryRequest struct {
 
 func (req AnswerCallbackQueryRequest) GetParams() (val url.Values, method string, err error) {
 	method = "answerCallbackQuery"
+	if req.CallbackQueryId == "" {
+		return nil, "",
+			fmt.Errorf("required fields not defined, CallbackQueryId: %s", req.CallbackQueryId)
+	}
 	val = url.Values{}
 	val.Add("callback_query_id", req.CallbackQueryId)
-	val.Add("text", req.Text)
+
+	if req.Text != "" {
+		val.Add("text", req.Text)
+	}
 	val.Add("show_alert", strconv.FormatBool(req.ShowAlert))
-	val.Add("url", req.URL)
-	val.Add("cache_time", strconv.Itoa(req.CacheTime))
+	if req.URL != "" {
+		val.Add("url", req.URL)
+	}
+	if req.CacheTime != 0 {
+		val.Add("cache_time", strconv.Itoa(req.CacheTime))
+	}
 	return
 }
 
@@ -188,20 +237,28 @@ type LabeledPrice struct {
 	Amount interface{} `json:"amount"`
 }
 type InvoiceRequest struct {
-	mu            sync.RWMutex
-	ChatId        interface{}    `json:"chat_id"`
-	Title         string         `json:"title"`
-	Description   string         `json:"description"`
-	Payload       string         `json:"payload"`
-	ProviderToken string         `json:"provider_token"`
-	Currency      string         `json:"currency"`
-	Prices        []LabeledPrice `json:"prices"`
-	ReplyMarkup   interface{}    `json:"reply_markup"`
+	ChatId        interface{}          `json:"chat_id"`
+	Title         string               `json:"title"`
+	Description   string               `json:"description"`
+	Payload       string               `json:"payload"`
+	ProviderToken string               `json:"provider_token"`
+	Currency      string               `json:"currency"`
+	Prices        []LabeledPrice       `json:"prices"`
+	ReplyMarkup   InlineKeyboardMarkup `json:"reply_markup"`
 }
 
-func (req *InvoiceRequest) GetParams() (val url.Values, method string, err error) {
-	req.mu.RLock()
+func (req InvoiceRequest) GetParams() (val url.Values, method string, err error) {
 	method = "sendInvoice"
+	if req.ChatId == nil || req.Title == "" || req.Description == "" ||
+		req.Payload == "" || req.ProviderToken == "" || req.Currency == "" ||
+		req.Prices == nil {
+
+		return nil, "",
+			fmt.Errorf("required fields not defined, ChatId: %v, Title: %s, Description: %s, "+
+				"Payload: %s, ProviderToken: %s, Prices: %v",
+				req.ChatId, req.Title, req.Description, req.Payload, req.ProviderToken, req.Prices)
+	}
+
 	val = url.Values{}
 	val.Add("chat_id", fmt.Sprint(req.ChatId))
 	val.Add("title", req.Title)
@@ -210,14 +267,13 @@ func (req *InvoiceRequest) GetParams() (val url.Values, method string, err error
 	val.Add("provider_token", req.ProviderToken)
 	val.Add("currency", req.Currency)
 
-	defer req.mu.RUnlock()
-
-	if data, err := json.Marshal(req.Prices); err != nil {
+	data, err := json.Marshal(req.Prices)
+	if err != nil {
 		return nil, "", err
-	} else {
-		val.Add("prices", string(data))
 	}
-	if req.ReplyMarkup != nil {
+	val.Add("prices", string(data))
+
+	if req.ReplyMarkup.InlineKeyboard != nil {
 		data, err := json.Marshal(req.ReplyMarkup)
 		if err != nil {
 			return nil, "", err

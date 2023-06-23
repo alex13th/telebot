@@ -157,7 +157,7 @@ func TestSimpleBotGetUpdates(t *testing.T) {
 		{
 			name:   "With Telegram error",
 			client: httpClientMock{body: `{"ok": false,"error_code":400,"description":"telegram API error"}`},
-			err:    StatusError{ErrorCode: 400, Description: "telegram API error"},
+			err:     ErrStatus{ErrorCode: 400, Description: "telegram API error"},
 		},
 	}
 
@@ -256,22 +256,22 @@ func TestSimplePoller_proceedUpdates(t *testing.T) {
 	}
 }
 
-func TestStatusError_Error(t *testing.T) {
+func Test_ErrStatus_Error(t *testing.T) {
 	tests := []struct {
 		name string
-		se   StatusError
+		se    ErrStatus
 		want string
 	}{
 		{
 			name: "Test errormessage",
-			se:   StatusError{ErrorCode: 401, Description: "unauthorized access"},
+			se:    ErrStatus{ErrorCode: 401, Description: "unauthorized access"},
 			want: "telegram status error 'unauthorized access', error_code: 401",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.se.Error(); got != tt.want {
-				t.Errorf("StatusError.Error() = %v, want %v", got, tt.want)
+				t.Errorf(" ErrStatus.Error() = %v, want %v", got, tt.want)
 			}
 		})
 	}

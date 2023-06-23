@@ -17,12 +17,12 @@ const (
 	DefultUpdateTimeout time.Duration = 2 * time.Second
 )
 
-type StatusError struct {
+type ErrStatus struct {
 	ErrorCode   int
 	Description string
 }
 
-func (se StatusError) Error() string {
+func (se ErrStatus) Error() string {
 	return fmt.Sprintf("telegram status error '%s', error_code: %d", se.Description, se.ErrorCode)
 }
 
@@ -118,7 +118,7 @@ func (sb SimpleBot) GetUpdates(ctx context.Context, req UpdatesRequest) (UpdateR
 	}
 
 	if !ur.Ok {
-		return UpdateResponse{}, StatusError{ErrorCode: ur.ErrorCode, Description: ur.Description}
+		return UpdateResponse{}, ErrStatus{ErrorCode: ur.ErrorCode, Description: ur.Description}
 	}
 
 	return ur, nil
