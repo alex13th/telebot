@@ -30,7 +30,7 @@ type CallbackQuery struct {
 }
 
 func (cq CallbackQuery) Answer(ctx context.Context, b Bot, Text string) (MessageResponse, error) {
-	acqr := AnswerCallbackQueryRequest{}
+	acqr := AnswerCallbackQuery{}
 	acqr.CallbackQueryId = cq.Id
 	acqr.Text = Text
 	return b.Send(ctx, acqr)
@@ -157,7 +157,7 @@ func (msg Message) IsCommand() bool {
 }
 
 func (msg Message) DeleteMessage(ctx context.Context, b Bot) (MessageResponse, error) {
-	return b.Send(ctx, DeleteMessageRequest{ChatId: msg.Chat.Id, MessageId: msg.MessageId})
+	return b.Send(ctx, DeleteMessage{ChatId: msg.Chat.Id, MessageId: msg.MessageId})
 }
 
 // Edit
@@ -165,7 +165,7 @@ func (msg Message) DeleteMessage(ctx context.Context, b Bot) (MessageResponse, e
 // Edit message with current Text and ReplyMarkup
 func (msg Message) Edit(ctx context.Context, tb Bot) (MessageResponse, error) {
 	return tb.Send(ctx,
-		EditMessageTextRequest{ChatId: msg.Chat.Id, MessageId: msg.MessageId, Text: msg.Text, ReplyMarkup: msg.ReplyMarkup})
+		EditMessageText{ChatId: msg.Chat.Id, MessageId: msg.MessageId, Text: msg.Text, ReplyMarkup: msg.ReplyMarkup})
 }
 
 // EditKeyboard
@@ -178,8 +178,8 @@ func (msg Message) EditKeyboard(ctx context.Context, tb Bot, kbd InlineKeyboardM
 
 // EditMR
 //
-// Edit message with EditMessageTextRequest
-func (msg Message) EditMR(ctx context.Context, tb Bot, emr EditMessageTextRequest) (MessageResponse, error) {
+// Edit message with EditMessageText
+func (msg Message) EditMR(ctx context.Context, tb Bot, emr EditMessageText) (MessageResponse, error) {
 	emr.ChatId = msg.Chat.Id
 	emr.MessageId = msg.MessageId
 	return tb.Send(ctx, emr)
@@ -190,15 +190,15 @@ func (msg Message) EditMR(ctx context.Context, tb Bot, emr EditMessageTextReques
 // Edit message text
 func (msg Message) EditText(ctx context.Context, tb Bot, text string) (MessageResponse, error) {
 	return tb.Send(ctx,
-		EditMessageTextRequest{ChatId: msg.Chat.Id, MessageId: msg.MessageId, Text: text})
+		EditMessageText{ChatId: msg.Chat.Id, MessageId: msg.MessageId, Text: text})
 }
 
 func (msg Message) ReplyText(ctx context.Context, b Bot, text string) (MessageResponse, error) {
 	return b.Send(ctx,
-		MessageRequest{ChatId: msg.Chat.Id, ReplyToMessageId: msg.MessageId, Text: text})
+		SendMessage{ChatId: msg.Chat.Id, ReplyToMessageId: msg.MessageId, Text: text})
 }
 
-func (msg Message) ReplyMR(ctx context.Context, b Bot, mr MessageRequest) (MessageResponse, error) {
+func (msg Message) ReplyMR(ctx context.Context, b Bot, mr SendMessage) (MessageResponse, error) {
 	mr.ChatId = msg.Chat.Id
 	mr.ReplyToMessageId = msg.MessageId
 	return b.Send(ctx, mr)
@@ -209,7 +209,7 @@ func (msg Message) ReplyMR(ctx context.Context, b Bot, mr MessageRequest) (Messa
 // Send message with current Text and ReplyMarkup to same chat
 func (msg Message) Send(ctx context.Context, b Bot) (MessageResponse, error) {
 	return b.Send(ctx,
-		MessageRequest{ChatId: msg.Chat.Id, Text: msg.Text, ReplyMarkup: msg.ReplyMarkup})
+		SendMessage{ChatId: msg.Chat.Id, Text: msg.Text, ReplyMarkup: msg.ReplyMarkup})
 }
 
 // SendText
@@ -217,7 +217,7 @@ func (msg Message) Send(ctx context.Context, b Bot) (MessageResponse, error) {
 // Send only text message to same chat
 func (msg Message) SendText(ctx context.Context, b Bot, text string) (MessageResponse, error) {
 	return b.Send(ctx,
-		MessageRequest{ChatId: msg.Chat.Id, Text: text})
+		SendMessage{ChatId: msg.Chat.Id, Text: text})
 }
 
 type MessageEntity struct {

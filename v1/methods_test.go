@@ -7,16 +7,16 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestMessageRequest_GetParams(t *testing.T) {
+func TestSendMessage_GetParams(t *testing.T) {
 	wantMethod := "sendMessage"
 	tests := map[string]struct {
-		request    *MessageRequest
+		request    *SendMessage
 		want       url.Values
 		wantMethod string
 		wantErr    bool
 	}{
 		"Required fields": {
-			request: &MessageRequest{
+			request: &SendMessage{
 				ChatId: 586350636,
 				Text:   "Example of text",
 			},
@@ -26,11 +26,11 @@ func TestMessageRequest_GetParams(t *testing.T) {
 			},
 			wantMethod: wantMethod,
 		},
-		"Empty ChatId": {request: &MessageRequest{Text: "Example of text"}, wantErr: true},
-		"Empty Text":   {request: &MessageRequest{ChatId: 586350636}, wantErr: true},
-		"Empty Fields": {request: &MessageRequest{}, wantErr: true},
+		"Empty ChatId": {request: &SendMessage{Text: "Example of text"}, wantErr: true},
+		"Empty Text":   {request: &SendMessage{ChatId: 586350636}, wantErr: true},
+		"Empty Fields": {request: &SendMessage{}, wantErr: true},
 		"Fully filled fields": {
-			request: &MessageRequest{
+			request: &SendMessage{
 				ChatId:    586350636,
 				Text:      "Example of text",
 				ParseMode: "MarkdownV2",
@@ -83,29 +83,29 @@ func TestMessageRequest_GetParams(t *testing.T) {
 			values, method, err := test.request.GetParams()
 
 			if (err != nil) != test.wantErr {
-				t.Errorf("MessageRequest.GetParams() error = %v", err)
+				t.Errorf("SendMessage.GetParams() error = %v", err)
 				return
 			}
 			if diff := cmp.Diff(values, test.want); diff != "" {
-				t.Errorf("MessageRequest.GetParams() difference %v", diff)
+				t.Errorf("SendMessage.GetParams() difference %v", diff)
 			}
 			if method != test.wantMethod {
-				t.Errorf("EditMessageTextRequest.GetParams() gotMethod = %v, want %v", method, test.wantMethod)
+				t.Errorf("EditMessageText.GetParams() gotMethod = %v, want %v", method, test.wantMethod)
 			}
 		})
 	}
 }
 
-func TestEditMessageTextRequest_GetParams(t *testing.T) {
+func TestEditMessageText_GetParams(t *testing.T) {
 	wantMethod := "editMessageText"
 	tests := map[string]struct {
-		request    *EditMessageTextRequest
+		request    *EditMessageText
 		want       url.Values
 		wantMethod string
 		wantErr    bool
 	}{
 		"Chat Message parameters": {
-			request: &EditMessageTextRequest{
+			request: &EditMessageText{
 				ChatId:    10,
 				MessageId: 100,
 				Text:      "Example of text",
@@ -118,7 +118,7 @@ func TestEditMessageTextRequest_GetParams(t *testing.T) {
 			wantMethod: wantMethod,
 		},
 		"Inline Message parameters": {
-			request: &EditMessageTextRequest{
+			request: &EditMessageText{
 				InlineMessageId: "20",
 				Text:            "Example of text",
 			},
@@ -129,13 +129,13 @@ func TestEditMessageTextRequest_GetParams(t *testing.T) {
 			wantMethod: wantMethod,
 		},
 		"Error fields": {
-			request: &EditMessageTextRequest{
+			request: &EditMessageText{
 				Text: "Example of text",
 			},
 			wantErr: true,
 		},
 		"Fully filled parameters": {
-			request: &EditMessageTextRequest{
+			request: &EditMessageText{
 				ChatId:    10,
 				MessageId: 100,
 				Text:      "Example of text",
@@ -183,26 +183,26 @@ func TestEditMessageTextRequest_GetParams(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			values, method, err := test.request.GetParams()
 			if (err != nil) != test.wantErr {
-				t.Errorf("EditMessageTextRequest.GetParams() error = %v", err)
+				t.Errorf("EditMessageText.GetParams() error = %v", err)
 				return
 			}
 			if diff := cmp.Diff(values, test.want); diff != "" {
-				t.Errorf("EditMessageTextRequest.GetParams() difference %v", diff)
+				t.Errorf("EditMessageText.GetParams() difference %v", diff)
 			}
 			if method != test.wantMethod {
-				t.Errorf("EditMessageTextRequest.GetParams() gotMethod = %v, want %v", method, test.wantMethod)
+				t.Errorf("EditMessageText.GetParams() gotMethod = %v, want %v", method, test.wantMethod)
 			}
 		})
 	}
 }
 
-func TestSetMyCommandsRequest_GetParams(t *testing.T) {
+func TestSetMyCommands_GetParams(t *testing.T) {
 	tests := map[string]struct {
-		request *SetMyCommandsRequest
+		request *SetMyCommands
 		want    map[string]string
 	}{
 		"Commands without Scope": {
-			request: &SetMyCommandsRequest{
+			request: &SetMyCommands{
 				Commands: []BotCommand{
 					{Command: "start", Description: "Start description"},
 					{Command: "help", Description: "Help description"},
@@ -213,7 +213,7 @@ func TestSetMyCommandsRequest_GetParams(t *testing.T) {
 			},
 		},
 		"Commands with BotCommandScopeAllPrivateChats": {
-			request: &SetMyCommandsRequest{
+			request: &SetMyCommands{
 				Commands: []BotCommand{
 					{Command: "start", Description: "Start description"},
 					{Command: "help", Description: "Help description"},
@@ -249,13 +249,13 @@ func TestSetMyCommandsRequest_GetParams(t *testing.T) {
 	}
 }
 
-func TestDeleteMessageRequest_GetParams(t *testing.T) {
+func TestDeleteMessage_GetParams(t *testing.T) {
 	tests := map[string]struct {
-		request *DeleteMessageRequest
+		request *DeleteMessage
 		want    map[string]string
 	}{
 		"Commands without Scope": {
-			request: &DeleteMessageRequest{ChatId: 12345, MessageId: 54321},
+			request: &DeleteMessage{ChatId: 12345, MessageId: 54321},
 			want:    map[string]string{"chat_id": "12345", "message_id": "54321"},
 		},
 	}
@@ -282,16 +282,16 @@ func TestDeleteMessageRequest_GetParams(t *testing.T) {
 	}
 }
 
-func TestInvoiceRequest_GetParams(t *testing.T) {
-	wantMethod := "sendInvoice"
+func TestSendInvoice_GetParams(t *testing.T) {
+	wantMethod := "SendInvoice"
 	tests := map[string]struct {
-		request    *InvoiceRequest
+		request    *SendInvoice
 		want       url.Values
 		wantMethod string
 		wantErr    bool
 	}{
 		"Required fields": {
-			request: &InvoiceRequest{
+			request: &SendInvoice{
 				ChatId:        10,
 				Title:         "Test invoice",
 				Description:   "Test Description",
@@ -312,7 +312,7 @@ func TestInvoiceRequest_GetParams(t *testing.T) {
 			wantMethod: wantMethod,
 		},
 		"With keyboard": {
-			request: &InvoiceRequest{
+			request: &SendInvoice{
 				ChatId:        10,
 				Title:         "Test invoice",
 				Description:   "Test Description",
@@ -335,7 +335,7 @@ func TestInvoiceRequest_GetParams(t *testing.T) {
 			wantMethod: wantMethod,
 		},
 		"Invalid fields": {
-			request: &InvoiceRequest{
+			request: &SendInvoice{
 				ChatId:        10,
 				Title:         "Test invoice",
 				ProviderToken: "PAY_TOKEN",
@@ -344,21 +344,21 @@ func TestInvoiceRequest_GetParams(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		"Empty fields": {request: &InvoiceRequest{}, wantErr: true},
+		"Empty fields": {request: &SendInvoice{}, wantErr: true},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			values, method, err := test.request.GetParams()
 			if (err != nil) != test.wantErr {
-				t.Errorf("InvoiceRequest.GetParams() error = %v", err)
+				t.Errorf("SendInvoice.GetParams() error = %v", err)
 				return
 			}
 			if diff := cmp.Diff(values, test.want); diff != "" {
-				t.Errorf("InvoiceRequest.GetParams() difference %v", diff)
+				t.Errorf("SendInvoice.GetParams() difference %v", diff)
 			}
 			if method != test.wantMethod {
-				t.Errorf("InvoiceRequest.GetParams() gotMethod = %v, want %v", method, test.wantMethod)
+				t.Errorf("SendInvoice.GetParams() gotMethod = %v, want %v", method, test.wantMethod)
 			}
 		})
 	}
@@ -434,7 +434,7 @@ func TestEditMessageReplyMarkup_GetParams(t *testing.T) {
 	}
 }
 
-func TestAnswerCallbackQueryRequest_GetParams(t *testing.T) {
+func TestAnswerCallbackQuery_GetParams(t *testing.T) {
 	wantMethod := "answerCallbackQuery"
 	type fields struct {
 		CallbackQueryId string
@@ -482,7 +482,7 @@ func TestAnswerCallbackQueryRequest_GetParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := AnswerCallbackQueryRequest{
+			req := AnswerCallbackQuery{
 				CallbackQueryId: tt.fields.CallbackQueryId,
 				Text:            tt.fields.Text,
 				ShowAlert:       tt.fields.ShowAlert,
@@ -491,14 +491,14 @@ func TestAnswerCallbackQueryRequest_GetParams(t *testing.T) {
 			}
 			gotVal, gotMethod, err := req.GetParams()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("AnswerCallbackQueryRequest.GetParams() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("AnswerCallbackQuery.GetParams() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if diff := cmp.Diff(gotVal, tt.wantVal); diff != "" {
-				t.Errorf("AnswerCallbackQueryRequest.GetParams() difference %v", diff)
+				t.Errorf("AnswerCallbackQuery.GetParams() difference %v", diff)
 			}
 			if gotMethod != tt.wantMethod {
-				t.Errorf("AnswerCallbackQueryRequest.GetParams() gotMethod = %v, want %v", gotMethod, tt.wantMethod)
+				t.Errorf("AnswerCallbackQuery.GetParams() gotMethod = %v, want %v", gotMethod, tt.wantMethod)
 			}
 		})
 	}

@@ -91,7 +91,7 @@ func TestMessageIsCommand(t *testing.T) {
 
 func TestMessage_DeleteMessage(t *testing.T) {
 	bm := botMock{}
-	want := DeleteMessageRequest{ChatId: 1, MessageId: 10}
+	want := DeleteMessage{ChatId: 1, MessageId: 10}
 	_, err := Message{Chat: Chat{Id: 1}, MessageId: 10}.DeleteMessage(context.Background(), &bm)
 	if err != nil {
 		t.Errorf("Message.DeleteMessage() error = %v, wantErr %v", err, nil)
@@ -106,7 +106,7 @@ func TestMessage_Edit(t *testing.T) {
 	bm := botMock{}
 	text := "New text"
 	kbd := [][]InlineKeyboardButton{{{Text: "Button"}}}
-	want := EditMessageTextRequest{ChatId: 1, MessageId: 10, Text: text, ReplyMarkup: kbd}
+	want := EditMessageText{ChatId: 1, MessageId: 10, Text: text, ReplyMarkup: kbd}
 	_, err := Message{Chat: Chat{Id: 1}, MessageId: 10, Text: text, ReplyMarkup: kbd}.Edit(context.Background(), &bm)
 	if err != nil {
 		t.Errorf("Message.Edit() error = %v, wantErr %v", err, nil)
@@ -135,8 +135,8 @@ func TestMessage_EditMR(t *testing.T) {
 	bm := botMock{}
 	text := "New text"
 	kbd := [][]InlineKeyboardButton{{{Text: "Button"}}}
-	emr := EditMessageTextRequest{Text: text, ReplyMarkup: kbd}
-	want := EditMessageTextRequest{ChatId: 1, MessageId: 10, Text: text, ReplyMarkup: kbd}
+	emr := EditMessageText{Text: text, ReplyMarkup: kbd}
+	want := EditMessageText{ChatId: 1, MessageId: 10, Text: text, ReplyMarkup: kbd}
 	_, err := Message{Chat: Chat{Id: 1}, MessageId: 10, Text: "Old text"}.EditMR(context.Background(), &bm, emr)
 	if err != nil {
 		t.Errorf("Message.EditText() error = %v, wantErr %v", err, nil)
@@ -151,7 +151,7 @@ func TestMessage_EditText(t *testing.T) {
 	bm := botMock{}
 	text := "New text"
 	kbd := [][]InlineKeyboardButton{{{Text: "Button"}}}
-	want := EditMessageTextRequest{ChatId: 1, MessageId: 10, Text: text}
+	want := EditMessageText{ChatId: 1, MessageId: 10, Text: text}
 	_, err := Message{Chat: Chat{Id: 1}, MessageId: 10, ReplyMarkup: kbd}.EditText(context.Background(), &bm, text)
 	if err != nil {
 		t.Errorf("Message.EditText() error = %v, wantErr %v", err, nil)
@@ -165,7 +165,7 @@ func TestMessage_EditText(t *testing.T) {
 func TestMessage_ReplyText(t *testing.T) {
 	bm := botMock{}
 	text := "Reply text"
-	want := MessageRequest{ChatId: 1, ReplyToMessageId: 10, Text: text}
+	want := SendMessage{ChatId: 1, ReplyToMessageId: 10, Text: text}
 	_, err := Message{Chat: Chat{Id: 1}, MessageId: 10}.ReplyText(context.Background(), &bm, text)
 	if err != nil {
 		t.Errorf("Message.ReplyText() error = %v, wantErr %v", err, nil)
@@ -179,8 +179,8 @@ func TestMessage_ReplyText(t *testing.T) {
 func TestMessage_ReplyMessage(t *testing.T) {
 	bm := botMock{}
 	text := "Send text"
-	mr := MessageRequest{Text: text, DisableNotification: true}
-	want := MessageRequest{ChatId: 1, Text: text, DisableNotification: true}
+	mr := SendMessage{Text: text, DisableNotification: true}
+	want := SendMessage{ChatId: 1, Text: text, DisableNotification: true}
 	_, err := Message{Chat: Chat{Id: 1}, Text: text}.ReplyMR(context.Background(), &bm, mr)
 	if err != nil {
 		t.Errorf("Message.Send() error = %v, wantErr %v", err, nil)
@@ -195,7 +195,7 @@ func TestMessage_Send(t *testing.T) {
 	bm := botMock{}
 	text := "Send text"
 	kbd := [][]InlineKeyboardButton{{{Text: "Button"}}}
-	want := MessageRequest{ChatId: 1, Text: text, ReplyMarkup: kbd}
+	want := SendMessage{ChatId: 1, Text: text, ReplyMarkup: kbd}
 	_, err := Message{Chat: Chat{Id: 1}, Text: text, ReplyMarkup: kbd}.Send(context.Background(), &bm)
 	if err != nil {
 		t.Errorf("Message.Send() error = %v, wantErr %v", err, nil)
@@ -210,7 +210,7 @@ func TestMessage_SendText(t *testing.T) {
 	bm := botMock{}
 	text := "Reply text"
 	kbd := [][]InlineKeyboardButton{{{Text: "Button"}}}
-	want := MessageRequest{ChatId: 1, Text: text} // Send only text message to same chat
+	want := SendMessage{ChatId: 1, Text: text} // Send only text message to same chat
 	_, err := Message{Chat: Chat{Id: 1}, MessageId: 10, ReplyMarkup: kbd}.SendText(context.Background(), &bm, text)
 	if err != nil {
 		t.Errorf("Message.SendText() error = %v, wantErr %v", err, nil)
@@ -224,7 +224,7 @@ func TestMessage_SendText(t *testing.T) {
 func TestCallbackQuery_Answer(t *testing.T) {
 	bm := botMock{}
 	text := "Answer text"
-	want := AnswerCallbackQueryRequest{CallbackQueryId: "1", Text: text}
+	want := AnswerCallbackQuery{CallbackQueryId: "1", Text: text}
 	_, err := CallbackQuery{Id: "1"}.Answer(context.Background(), &bm, text)
 	if err != nil {
 		t.Errorf("CallbackQuery.Answer() error = %v, wantErr %v", err, nil)
