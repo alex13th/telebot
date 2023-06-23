@@ -5,48 +5,35 @@ import (
 	"regexp"
 )
 
-type User struct {
-	Id                      int    `json:"id"`
-	IsBot                   bool   `json:"is_bot"`
-	FirstName               string `json:"first_name"`
-	LastName                string `json:"last_name"`
-	UserName                string `json:"username"`
-	LanguageCode            string `json:"language_code"`
-	CanJoinGroups           bool   `json:"can_join_groups"`
-	CanReadAllGroupMessages bool   `json:"can_read_all_group_messages"`
-	SupportsInlineQueries   bool   `json:"supports_inline_queries"`
+type BotCommand struct {
+	Command     string `json:"command"`
+	Description string `json:"description"`
 }
 
-type ChatPhoto struct {
-	SmallFileId       string `json:"small_file_id"`
-	SmallFileUniqueId string `json:"small_file_unique_id"`
-	BigFileId         string `json:"big_file_id"`
-	BigFileUniqueId   string `json:"big_file_unique_id"`
+type BotCommandScope struct {
+	Type string `json:"type"`
 }
 
-type ChatPermissions struct {
-	CanSendMessages       bool `json:"can_send_messages"`
-	CanSendMediaMessages  bool `json:"can_send_media_messages"`
-	CanSendPolls          bool `json:"can_send_polls"`
-	CanSendOtherMessages  bool `json:"can_send_other_messages"`
-	CanAddWebPagePreviews bool `json:"can_add_web_page_previews"`
-	CanChangeInfo         bool `json:"can_change_info"`
-	CanInviteUsers        bool `json:"can_invite_users"`
-	CanPinMessages        bool `json:"can_pin_messages"`
+type BotCommandScopeChat struct {
+	Type   string      `json:"type"`
+	ChatId interface{} `json:"chat_id"`
 }
 
-type Location struct {
-	Longitude            float32 `json:"longitude"`
-	Latitude             float32 `json:"latitude"`
-	HorizontalAccuracy   float32 `json:"horizontal_accuracy"`
-	LivePeriod           int     `json:"live_period"`
-	Heading              int     `json:"heading"`
-	ProximityAlertRadius int     `json:"proximity_alert_radius"`
+type CallbackQuery struct {
+	Id              string  `json:"id"`
+	From            User    `json:"from"`
+	Message         Message `json:"message"`
+	InlineMessageId string  `json:"inline_message_id"`
+	ChatInstance    string  `json:"chat_instance"`
+	Data            string  `json:"data"`
+	GameShortName   string  `json:"game_short_name"`
 }
 
-type ChatLocation struct {
-	Location Location `json:"location"`
-	Address  string   `json:"address"`
+func (cq CallbackQuery) Answer(ctx context.Context, b Bot, Text string) (MessageResponse, error) {
+	acqr := AnswerCallbackQueryRequest{}
+	acqr.CallbackQueryId = cq.Id
+	acqr.Text = Text
+	return b.Send(ctx, acqr)
 }
 
 type Chat struct {
@@ -70,14 +57,32 @@ type Chat struct {
 	Location              ChatLocation    `json:"location"`
 }
 
+type ChatLocation struct {
+	Location Location `json:"location"`
+	Address  string   `json:"address"`
+}
+
+type ChatPermissions struct {
+	CanSendMessages       bool `json:"can_send_messages"`
+	CanSendMediaMessages  bool `json:"can_send_media_messages"`
+	CanSendPolls          bool `json:"can_send_polls"`
+	CanSendOtherMessages  bool `json:"can_send_other_messages"`
+	CanAddWebPagePreviews bool `json:"can_add_web_page_previews"`
+	CanChangeInfo         bool `json:"can_change_info"`
+	CanInviteUsers        bool `json:"can_invite_users"`
+	CanPinMessages        bool `json:"can_pin_messages"`
+}
+
+type ChatPhoto struct {
+	SmallFileId       string `json:"small_file_id"`
+	SmallFileUniqueId string `json:"small_file_unique_id"`
+	BigFileId         string `json:"big_file_id"`
+	BigFileUniqueId   string `json:"big_file_unique_id"`
+}
+
 type ChatShared struct {
 	RequestId int `json:"request_id"`
 	ChatId    int `json:"chat_id"`
-}
-
-type KeyboardButtonRequestChat struct {
-	RequestId   int  `json:"request_id"`
-	BotIsMember bool `json:"bot_is_member"`
 }
 
 type KeyboardButton struct {
@@ -85,8 +90,9 @@ type KeyboardButton struct {
 	RequestChat KeyboardButtonRequestChat `json:"request_chat"`
 }
 
-type ReplyKeyboardMarkup struct {
-	Keyboard [][]KeyboardButton `json:"keyboard"`
+type KeyboardButtonRequestChat struct {
+	RequestId   int  `json:"request_id"`
+	BotIsMember bool `json:"bot_is_member"`
 }
 
 type InlineKeyboardButton struct {
@@ -102,17 +108,13 @@ type InlineKeyboardMarkup struct {
 	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard"`
 }
 
-type ReplyMarkuper interface {
-	ReplyKeyboardMarkup | InlineKeyboardMarkup
-}
-
-type MessageEntity struct {
-	Type     string `json:"type"`
-	Offset   int    `json:"offset"`
-	Length   int    `json:"length"`
-	Url      string `json:"url"`
-	User     *User  `json:"user"`
-	Language string `json:"language"`
+type Location struct {
+	Longitude            float32 `json:"longitude"`
+	Latitude             float32 `json:"latitude"`
+	HorizontalAccuracy   float32 `json:"horizontal_accuracy"`
+	LivePeriod           int     `json:"live_period"`
+	Heading              int     `json:"heading"`
+	ProximityAlertRadius int     `json:"proximity_alert_radius"`
 }
 
 type Message struct {
@@ -218,21 +220,16 @@ func (msg Message) SendText(ctx context.Context, b Bot, text string) (MessageRes
 		MessageRequest{ChatId: msg.Chat.Id, Text: text})
 }
 
-type CallbackQuery struct {
-	Id              string  `json:"id"`
-	From            User    `json:"from"`
-	Message         Message `json:"message"`
-	InlineMessageId string  `json:"inline_message_id"`
-	ChatInstance    string  `json:"chat_instance"`
-	Data            string  `json:"data"`
-	GameShortName   string  `json:"game_short_name"`
+type MessageEntity struct {
+	Type     string `json:"type"`
+	Offset   int    `json:"offset"`
+	Length   int    `json:"length"`
+	Url      string `json:"url"`
+	User     *User  `json:"user"`
+	Language string `json:"language"`
 }
-
-func (cq CallbackQuery) Answer(ctx context.Context, b Bot, Text string) (MessageResponse, error) {
-	acqr := AnswerCallbackQueryRequest{}
-	acqr.CallbackQueryId = cq.Id
-	acqr.Text = Text
-	return b.Send(ctx, acqr)
+type ReplyKeyboardMarkup struct {
+	Keyboard [][]KeyboardButton `json:"keyboard"`
 }
 
 type Update struct {
@@ -244,16 +241,14 @@ type Update struct {
 	CallbackQuery     CallbackQuery `json:"callback_query"`
 }
 
-type BotCommand struct {
-	Command     string `json:"command"`
-	Description string `json:"description"`
-}
-
-type BotCommandScope struct {
-	Type string `json:"type"`
-}
-
-type BotCommandScopeChat struct {
-	Type   string      `json:"type"`
-	ChatId interface{} `json:"chat_id"`
+type User struct {
+	Id                      int    `json:"id"`
+	IsBot                   bool   `json:"is_bot"`
+	FirstName               string `json:"first_name"`
+	LastName                string `json:"last_name"`
+	UserName                string `json:"username"`
+	LanguageCode            string `json:"language_code"`
+	CanJoinGroups           bool   `json:"can_join_groups"`
+	CanReadAllGroupMessages bool   `json:"can_read_all_group_messages"`
+	SupportsInlineQueries   bool   `json:"supports_inline_queries"`
 }
