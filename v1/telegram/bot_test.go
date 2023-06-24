@@ -1,4 +1,4 @@
-package telebot
+package telegram
 
 import (
 	"context"
@@ -157,7 +157,7 @@ func TestSimpleBotGetUpdates(t *testing.T) {
 		{
 			name:   "With Telegram error",
 			client: httpClientMock{body: `{"ok": false,"error_code":400,"description":"telegram API error"}`},
-			err:     ErrStatus{ErrorCode: 400, Description: "telegram API error"},
+			err:    ErrStatus{ErrorCode: 400, Description: "telegram API error"},
 		},
 	}
 
@@ -259,12 +259,12 @@ func TestSimplePoller_proceedUpdates(t *testing.T) {
 func Test_ErrStatus_Error(t *testing.T) {
 	tests := []struct {
 		name string
-		se    ErrStatus
+		se   ErrStatus
 		want string
 	}{
 		{
 			name: "Test errormessage",
-			se:    ErrStatus{ErrorCode: 401, Description: "unauthorized access"},
+			se:   ErrStatus{ErrorCode: 401, Description: "unauthorized access"},
 			want: "telegram status error 'unauthorized access', error_code: 401",
 		},
 	}
